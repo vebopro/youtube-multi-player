@@ -3,133 +3,146 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube Multi-Player with Sync</title>
+  <title>YouTube Multi Player</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
       background-color: #f9f9f9;
     }
-    .video-container {
+    .player-container {
       display: flex;
-      justify-content: space-around;
-      margin-top: 20px;
+      flex-wrap: wrap;
+      gap: 10px;
     }
     iframe {
-      width: 320px;
-      height: 180px;
+      width: 45%;
+      height: 300px;
     }
     #syncButton {
       margin-top: 20px;
       padding: 10px 20px;
-      background-color: #007BFF;
+      background-color: #4CAF50;
       color: white;
       border: none;
       cursor: pointer;
     }
-    #syncButton:hover {
-      background-color: #0056b3;
+    #syncButton:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    input {
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <h1>YouTube Multi-Player Sync</h1>
-
-  <div>
-    <label for="video1-url">YouTube URL 1:</label>
-    <input type="text" id="video1-url" placeholder="Enter first YouTube URL" />
-  </div>
-  <div>
-    <label for="video2-url">YouTube URL 2:</label>
-    <input type="text" id="video2-url" placeholder="Enter second YouTube URL" />
-  </div>
-  <div>
-    <label for="video3-url">YouTube URL 3:</label>
-    <input type="text" id="video3-url" placeholder="Enter third YouTube URL" />
-  </div>
-  <div>
-    <label for="video4-url">YouTube URL 4:</label>
-    <input type="text" id="video4-url" placeholder="Enter fourth YouTube URL" />
-  </div>
-
-  <div class="video-container">
-    <iframe id="video1" src="" frameborder="0"></iframe>
-    <iframe id="video2" src="" frameborder="0"></iframe>
-    <iframe id="video3" src="" frameborder="0"></iframe>
-    <iframe id="video4" src="" frameborder="0"></iframe>
+  <h1>YouTube Multi Player</h1>
+  
+  <label for="url1">Video 1 URL:</label>
+  <input type="text" id="url1" placeholder="https://youtu.be/XXXXXX?t=123"><br>
+  
+  <label for="url2">Video 2 URL:</label>
+  <input type="text" id="url2" placeholder="https://youtu.be/XXXXXX?t=123"><br>
+  
+  <label for="url3">Video 3 URL:</label>
+  <input type="text" id="url3" placeholder="https://youtu.be/XXXXXX?t=123"><br>
+  
+  <label for="url4">Video 4 URL:</label>
+  <input type="text" id="url4" placeholder="https://youtu.be/XXXXXX?t=123"><br>
+  
+  <div class="player-container">
+    <iframe id="player1" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    <iframe id="player2" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    <iframe id="player3" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    <iframe id="player4" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
   </div>
 
   <button id="syncButton" onclick="syncVideos()">Sync Videos</button>
 
+  <script src="https://www.youtube.com/iframe_api"></script>
   <script>
-    const apiKey = 'AIzaSyBfrwUzoX8NJVN6AotMJggJh5cJLCqjmAc';  // Your API key here
+    let players = [];
+    let videoStartTimes = [];
+    let isSyncing = false;
 
-    let video1StartTime = 0;
-    let video1Duration = 0;
-    let video1Player;
-
-    // Load the YouTube API
-    function loadYouTubeAPI() {
-      const script = document.createElement('script');
-      script.src = 'https://www.youtube.com/iframe_api';
-      document.body.appendChild(script);
-    }
-
+    // YouTube Player API setup
     function onYouTubeIframeAPIReady() {
-      video1Player = new YT.Player('video1', {
-        events: {
-          'onStateChange': onPlayerStateChange
-        }
-      });
+      for (let i = 0; i < 4; i++) {
+        players[i] = new YT.Player(`player${i+1}`, {
+          height: '300',
+          width: '100%',
+          videoId: 'dQw4w9WgXcQ', // Dummy video to initialize player
+          events: {
+            'onStateChange': onPlayerStateChange
+          }
+        });
+      }
     }
 
     function onPlayerStateChange(event) {
-      if (event.data === YT.PlayerState.PLAYING) {
-        video1StartTime = video1Player.getCurrentTime();
-        video1Duration = video1Player.getDuration();
+      if (event.data === YT.PlayerState.PLAYING && !isSyncing) {
+        syncPlayers(event.target);
       }
     }
 
+    // Sync videos based on the selected start time
     function syncVideos() {
-      const videoUrls = [
-        document.getElementById('video1-url').value,
-        document.getElementById('video2-url').value,
-        document.getElementById('video3-url').value,
-        document.getElementById('video4-url').value
+      const urls = [
+        document.getElementById('url1').value,
+        document.getElementById('url2').value,
+        document.getElementById('url3').value,
+        document.getElementById('url4').value
       ];
 
-      if (videoUrls[0]) {
-        // Set the video 1 to its correct timestamp
-        loadVideo(1, videoUrls[0], video1StartTime);
+      // Extract the start time from the URL
+      videoStartTimes = urls.map(url => {
+        const match = url.match(/t=(\d+)/);
+        return match ? parseInt(match[1]) : 0;
+      });
+
+      // Set the video ids and start players
+      for (let i = 0; i < 4; i++) {
+        const videoId = urls[i].split('v=')[1].split('&')[0];
+        players[i].loadVideoById(videoId, 0, "large");
       }
 
-      if (videoUrls[1]) {
-        loadVideo(2, videoUrls[1], video1StartTime);
-      }
+      // Enable syncing
+      isSyncing = true;
+    }
 
-      if (videoUrls[2]) {
-        loadVideo(3, videoUrls[2], video1StartTime);
-      }
-
-      if (videoUrls[3]) {
-        loadVideo(4, videoUrls[3], video1StartTime);
+    // Sync the players based on the player that triggered the sync
+    function syncPlayers(targetPlayer) {
+      const currentTime = targetPlayer.getCurrentTime();
+      const index = players.indexOf(targetPlayer);
+      
+      // Sync other players based on their respective start times
+      for (let i = 0; i < 4; i++) {
+        if (i !== index) {
+          const timeDifference = currentTime - videoStartTimes[index];
+          players[i].seekTo(videoStartTimes[i] + timeDifference, true);
+        }
       }
     }
 
-    function loadVideo(videoNumber, videoUrl, startTime) {
-      const videoId = extractVideoId(videoUrl);
-      const iframe = document.getElementById(`video${videoNumber}`);
+    // Handle URL input and update players
+    function handleUrlInput() {
+      const urls = [
+        document.getElementById('url1').value,
+        document.getElementById('url2').value,
+        document.getElementById('url3').value,
+        document.getElementById('url4').value
+      ];
 
-      iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&start=${startTime}`;
+      let allUrlsEntered = urls.every(url => url !== "");
+      document.getElementById('syncButton').disabled = !allUrlsEntered;
     }
 
-    function extractVideoId(url) {
-      const videoIdMatch = url.match(/(?:https?:\/\/(?:www\.)?youtube\.com\/(?:[^\/\n]+\/\S+\/|\S+\/)?(?:v|e(?:mbed)?)\/|\S*\/)([a-zA-Z0-9_-]{11})/);
-      return videoIdMatch ? videoIdMatch[1] : null;
-    }
+    // Attach event listeners for URL inputs
+    document.querySelectorAll('input').forEach(input => {
+      input.addEventListener('input', handleUrlInput);
+    });
 
-    // Trigger YouTube API loading
-    loadYouTubeAPI();
   </script>
 </body>
 </html>
