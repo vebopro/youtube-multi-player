@@ -40,6 +40,7 @@ function addPlayer(videoId, index) {
         videoId: videoId,
         events: {
             'onReady': onPlayerReady,
+            'onStateChange': onPlayerStateChange
         }
     });
 
@@ -53,7 +54,27 @@ function onPlayerReady(event) {
 }
 
 function calculateStartTime() {
-    const currentTime = Math.floor(Date.now() / 1000); // 現在のUNIXタイムスタンプ
-    const liveStartTime = 1234567890; // 配信開始時刻（UNIXタイムスタンプ）をAPIで取得
+    const currentTime = Math.floor(Date.now() / 1000);
+    const liveStartTime = 1234567890; // 配信開始時刻を設定
     return currentTime - liveStartTime;
+}
+
+function onPlayerStateChange(event) {
+    if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.PLAYING) {
+        const currentTime = event.target.getCurrentTime();
+        syncPlayers(event.target, currentTime);
+    }
+}
+
+function syncPlayers(activePlayer, time) {
+    players.forEach(player => {
+        if (player !== activePlayer) {
+            player.seekTo(time, true);
+            if (activePlayer.getPlayerState() === YT.PlayerState.PLAYING) {
+                player.playVideo();
+            } else {
+                player.pauseVideo();
+            }
+        }
+    });
 }
