@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTubeアーカイブ同期再生</title>
+  <title>YouTubeアーカイブ同期再生ツール</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -36,12 +36,14 @@
   <header>
     <h1>YouTubeアーカイブ同期再生ツール</h1>
     <p>複数のYouTubeアーカイブを同期して再生できます。</p>
+    <p>このツールを使用して、他者と動画を同期再生できます。</p>
   </header>
 
   <div>
     <button id="sync-time">同期開始</button>
     <button id="play-all">再生</button>
     <button id="pause-all">一時停止</button>
+    <button id="generate-url">同期URLを生成</button>
   </div>
 
   <div id="video-container">
@@ -50,6 +52,8 @@
 
   <script>
     let players = [];  // プレイヤーを保存する配列
+    let videoStartTimes = {}; // 各動画の配信開始時刻（JST）
+    let videoData = []; // 動画の情報を保持する配列
 
     // 動画IDを抽出する関数
     function extractVideoId(url) {
@@ -57,8 +61,16 @@
       return match ? match[1] : null;
     }
 
+    // 現在の日本標準時（JST）を取得する関数
+    function getCurrentJST() {
+      const now = new Date();
+      const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+      const jst = new Date(utc + 9 * 60 * 60 * 1000); // JSTはUTC+9時間
+      return jst;
+    }
+
     // YouTubeプレイヤーを作成する関数
-    function createPlayer(videoId) {
+    function createPlayer(videoId, startTime) {
       const container = document.getElementById('video-container');
       const iframe = document.createElement('iframe');
       iframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1`;
@@ -71,6 +83,8 @@
         events: {
           onReady: function (event) {
             players.push(event.target);
+            videoStartTimes[videoId] = startTime;
+            videoData.push({ videoId, startTime });
           },
           onStateChange: function(event) {
             if (event.data === YT.PlayerState.PLAYING) {
@@ -81,13 +95,14 @@
       });
     }
 
-    // プレイヤーの再生位置を同期する関数
+    // プレイヤーの再生位置をJST基準で同期する関数
     function syncAllPlayers() {
-      const time = players[0].getCurrentTime();
+      const currentJST = getCurrentJST();
       players.forEach(player => {
-        if (Math.abs(player.getCurrentTime() - time) > 1) { // 大きなずれがあった場合にだけ同期
-          player.seekTo(time, true);
-        }
+        const videoId = player.getVideoData().video_id;
+        const startTime = videoStartTimes[videoId];
+        const timeDifference = (currentJST - startTime) / 1000; // ミリ秒を秒に変換
+        player.seekTo(timeDifference, true); // 再生位置を設定
       });
     }
 
@@ -113,18 +128,46 @@
     // 一時停止ボタン
     document.getElementById('pause-all').addEventListener('click', () => controlPlayers('pause'));
 
+    // URL生成ボタン
+    document.getElementById('generate-url').addEventListener('click', () => {
+      const urlParams = videoData.map(video => {
+        return `${video.videoId}=${encodeURIComponent(new Date(video.startTime).toISOString())}`;
+      }).join('&');
+
+      const shareUrl = `${window.location.href}?${urlParams}`;
+      prompt("このURLを共有できます:", shareUrl);
+    });
+
     // 動画追加
     function addVideo() {
       const url = prompt("YouTubeのURLを入力してください");
       const videoId = extractVideoId(url);
-      if (videoId) {
-        createPlayer(videoId);
+      const startTimeStr = prompt("配信開始時刻（YYYY-MM-DD HH:MM:SS）を入力してください（JST）");
+      const startTime = new Date(startTimeStr).getTime(); // JSTでの配信開始時刻（ミリ秒）
+
+      if (videoId && startTime) {
+        createPlayer(videoId, startTime);
+      } else {
+        alert("無効なURLまたは配信開始時刻です。");
       }
+    }
+
+    // ページ読み込み時にURLパラメータを解析して動画を追加
+    function loadFromURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      urlParams.forEach((value, key) => {
+        const videoId = key;
+        const startTime = new Date(value).getTime(); // JSTでの配信開始時刻（ミリ秒）
+        createPlayer(videoId, startTime);
+      });
     }
 
     // ページ読み込み時にデモ用動画を2つ追加
     addVideo();  // 1番目の動画
     addVideo();  // 2番目の動画
+
+    // URLパラメータに基づいて動画を読み込む
+    loadFromURL();
 
     // YouTube APIを準備する
     function onYouTubeIframeAPIReady() {
