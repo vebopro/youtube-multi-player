@@ -1,82 +1,85 @@
-﻿let players = [];
-const videoInputs = [
-    "video-url-1",
-    "video-url-2",
-    "video-url-3",
-    "video-url-4"
-];
-
-function onYouTubeIframeAPIReady() {
-    console.log('YouTube API ready.');
-}
-
-document.getElementById('url-form').addEventListener('submit', function (e) {
-    e.preventDefault();
-    const playerContainer = document.getElementById('player-container');
-    playerContainer.innerHTML = ''; // Reset the players
-    players = []; // Reset the players array
-
-    videoInputs.forEach((inputId, index) => {
-        const url = document.getElementById(inputId).value;
-        const videoId = extractVideoId(url);
-        if (videoId) {
-            addPlayer(videoId, index);
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Multi-Player</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
         }
-    });
-});
 
-function extractVideoId(url) {
-    const regex = /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([^&]+)|youtu\.be\/([^&]+)/;
-    const match = url.match(regex);
-    return match ? match[1] || match[2] : null;
-}
-
-function addPlayer(videoId, index) {
-    const playerDiv = document.createElement('div');
-    playerDiv.id = `player-${index}`;
-    document.getElementById('player-container').appendChild(playerDiv);
-
-    const player = new YT.Player(playerDiv.id, {
-        videoId: videoId,
-        events: {
-            'onReady': onPlayerReady,
-            'onStateChange': onPlayerStateChange
+        h1 {
+            margin: 20px 0;
         }
-    });
 
-    players.push(player);
-}
-
-function onPlayerReady(event) {
-    // 初期再生開始時間（ここでは同期に対応する場合のロジック）
-    const startTime = calculateStartTime();
-    event.target.seekTo(startTime, true);
-    event.target.playVideo();
-}
-
-function calculateStartTime() {
-    const currentTime = Math.floor(Date.now() / 1000); // 現在のUNIXタイムスタンプ
-    const liveStartTime = 1234567890; // 配信開始時刻（UNIXタイムスタンプ）
-    return currentTime - liveStartTime;
-}
-
-function onPlayerStateChange(event) {
-    // シークバーが操作された場合
-    if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.PLAYING) {
-        const currentTime = event.target.getCurrentTime();
-        syncPlayers(event.target, currentTime);
-    }
-}
-
-function syncPlayers(activePlayer, time) {
-    players.forEach(player => {
-        if (player !== activePlayer) {
-            player.seekTo(time, true);
-            if (activePlayer.getPlayerState() === YT.PlayerState.PLAYING) {
-                player.playVideo();
-            } else {
-                player.pauseVideo();
-            }
+        form {
+            margin: 20px auto;
+            max-width: 600px;
+            padding: 10px;
         }
-    });
-}
+
+        form div {
+            margin-bottom: 10px;
+        }
+
+        .player-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); /* 横2列 */
+            gap: 10px; /* 隙間 */
+            justify-content: center;
+            padding: 10px;
+        }
+
+        .player-container iframe {
+            width: 100%; /* レスポンシブ対応 */
+            max-width: 400px; /* 最大幅 */
+            aspect-ratio: 16 / 9; /* アスペクト比を維持 */
+        }
+
+        input[type="text"] {
+            width: calc(100% - 20px);
+            padding: 5px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>YouTube Multi-Player</h1>
+    <form id="url-form">
+        <div>
+            <label>Video 1: <input type="text" id="video-url-1" placeholder="Enter YouTube URL" required></label>
+        </div>
+        <div>
+            <label>Video 2: <input type="text" id="video-url-2" placeholder="Enter YouTube URL"></label>
+        </div>
+        <div>
+            <label>Video 3: <input type="text" id="video-url-3" placeholder="Enter YouTube URL"></label>
+        </div>
+        <div>
+            <label>Video 4: <input type="text" id="video-url-4" placeholder="Enter YouTube URL"></label>
+        </div>
+        <button type="submit">Load Videos</button>
+    </form>
+    <div class="player-container" id="player-container"></div>
+
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="script.js"></script>
+</body>
+</html>
