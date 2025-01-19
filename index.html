@@ -1,85 +1,138 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Multi-Player</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 0;
-            padding: 0;
-            background-color: #f9f9f9;
-        }
-
-        h1 {
-            margin: 20px 0;
-        }
-
-        form {
-            margin: 20px auto;
-            max-width: 600px;
-            padding: 10px;
-        }
-
-        form div {
-            margin-bottom: 10px;
-        }
-
-        .player-container {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr); /* 横2列 */
-            gap: 10px; /* 隙間 */
-            justify-content: center;
-            padding: 10px;
-        }
-
-        .player-container iframe {
-            width: 100%; /* レスポンシブ対応 */
-            max-width: 400px; /* 最大幅 */
-            aspect-ratio: 16 / 9; /* アスペクト比を維持 */
-        }
-
-        input[type="text"] {
-            width: calc(100% - 20px);
-            padding: 5px;
-        }
-
-        button {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTubeアーカイブ同期再生</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f9f9f9;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    #video-container {
+      display: grid;
+      gap: 10px;
+      margin-top: 20px;
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .video-player {
+      width: 100%;
+      height: 200px;
+      border: none;
+    }
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-    <h1>YouTube Multi-Player</h1>
-    <form id="url-form">
-        <div>
-            <label>Video 1: <input type="text" id="video-url-1" placeholder="Enter YouTube URL" required></label>
-        </div>
-        <div>
-            <label>Video 2: <input type="text" id="video-url-2" placeholder="Enter YouTube URL"></label>
-        </div>
-        <div>
-            <label>Video 3: <input type="text" id="video-url-3" placeholder="Enter YouTube URL"></label>
-        </div>
-        <div>
-            <label>Video 4: <input type="text" id="video-url-4" placeholder="Enter YouTube URL"></label>
-        </div>
-        <button type="submit">Load Videos</button>
-    </form>
-    <div class="player-container" id="player-container"></div>
+  <header>
+    <h1>YouTubeアーカイブ同期再生ツール</h1>
+    <p>複数のYouTubeアーカイブを同期して再生できます。</p>
+  </header>
 
-    <script src="https://www.youtube.com/iframe_api"></script>
-    <script src="script.js"></script>
+  <div>
+    <button id="sync-time">同期開始</button>
+    <button id="play-all">再生</button>
+    <button id="pause-all">一時停止</button>
+  </div>
+
+  <div id="video-container">
+    <!-- 動的にプレイヤーが追加される -->
+  </div>
+
+  <script>
+    let players = [];  // プレイヤーを保存する配列
+
+    // 動画IDを抽出する関数
+    function extractVideoId(url) {
+      const match = url.match(/(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([^&]+)/);
+      return match ? match[1] : null;
+    }
+
+    // YouTubeプレイヤーを作成する関数
+    function createPlayer(videoId) {
+      const container = document.getElementById('video-container');
+      const iframe = document.createElement('iframe');
+      iframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1`;
+      iframe.allow = "autoplay; encrypted-media";
+      iframe.className = "video-player";
+      container.appendChild(iframe);
+
+      // プレイヤーを配列に追加
+      const player = new YT.Player(iframe, {
+        events: {
+          onReady: function (event) {
+            players.push(event.target);
+          },
+          onStateChange: function(event) {
+            if (event.data === YT.PlayerState.PLAYING) {
+              syncAllPlayers();
+            }
+          }
+        }
+      });
+    }
+
+    // プレイヤーの再生位置を同期する関数
+    function syncAllPlayers() {
+      const time = players[0].getCurrentTime();
+      players.forEach(player => {
+        if (Math.abs(player.getCurrentTime() - time) > 1) { // 大きなずれがあった場合にだけ同期
+          player.seekTo(time, true);
+        }
+      });
+    }
+
+    // 動画の再生・一時停止
+    function controlPlayers(action) {
+      players.forEach(player => {
+        if (action === 'play') {
+          player.playVideo();
+        } else if (action === 'pause') {
+          player.pauseVideo();
+        }
+      });
+    }
+
+    // 同期ボタン
+    document.getElementById('sync-time').addEventListener('click', () => {
+      syncAllPlayers();
+    });
+
+    // 再生ボタン
+    document.getElementById('play-all').addEventListener('click', () => controlPlayers('play'));
+
+    // 一時停止ボタン
+    document.getElementById('pause-all').addEventListener('click', () => controlPlayers('pause'));
+
+    // 動画追加
+    function addVideo() {
+      const url = prompt("YouTubeのURLを入力してください");
+      const videoId = extractVideoId(url);
+      if (videoId) {
+        createPlayer(videoId);
+      }
+    }
+
+    // ページ読み込み時にデモ用動画を2つ追加
+    addVideo();  // 1番目の動画
+    addVideo();  // 2番目の動画
+
+    // YouTube APIを準備する
+    function onYouTubeIframeAPIReady() {
+      // プレイヤーの準備が整ったら何かを実行する場合はこちらに追加
+    }
+  </script>
+
+  <!-- YouTube APIを読み込む -->
+  <script src="https://www.youtube.com/iframe_api"></script>
 </body>
 </html>
