@@ -1,9 +1,9 @@
 ﻿<!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube動画を複数表示</title>
+  <title>YouTube Video Synchronization Tool</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -13,82 +13,163 @@
     .form-container {
       margin-bottom: 20px;
     }
-    input[type="text"] {
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    input[type="url"] {
+      width: 100%;
       padding: 10px;
-      font-size: 14px;
-      margin-right: 10px;
-      width: 300px;
+      margin-bottom: 10px;
     }
     button {
-      padding: 10px 15px;
-      font-size: 14px;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
       cursor: pointer;
     }
-    #video-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
+    button:hover {
+      background-color: #45a049;
     }
-    .video-player {
-      width: 48%;
-      height: 250px;
+    #player {
+      margin-top: 20px;
+      width: 640px;
+      height: 360px;
     }
   </style>
 </head>
 <body>
-  <h1>YouTube動画を複数表示</h1>
 
-  <div class="form-container">
-    <input type="text" id="video-url-1" placeholder="YouTube動画URL 1">
-    <button onclick="addVideo(1)">動画1を追加</button>
-  </div>
-  <div class="form-container">
-    <input type="text" id="video-url-2" placeholder="YouTube動画URL 2">
-    <button onclick="addVideo(2)">動画2を追加</button>
-  </div>
-  <div class="form-container">
-    <input type="text" id="video-url-3" placeholder="YouTube動画URL 3">
-    <button onclick="addVideo(3)">動画3を追加</button>
-  </div>
-  <div class="form-container">
-    <input type="text" id="video-url-4" placeholder="YouTube動画URL 4">
-    <button onclick="addVideo(4)">動画4を追加</button>
-  </div>
+<h1>YouTube Video Synchronization Tool</h1>
 
-  <div id="video-container"></div>
+<div class="form-container">
+  <label for="video-url-1">YouTube Video URL 1</label>
+  <input type="url" id="video-url-1" placeholder="Enter the video URL">
+</div>
 
-  <script>
-    // YouTubeの動画IDを取得する関数
-    function extractVideoId(url) {
-      const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-      const match = url.match(regex);
-      return match ? match[1] : null;
-    }
+<div class="form-container">
+  <label for="video-url-2">YouTube Video URL 2</label>
+  <input type="url" id="video-url-2" placeholder="Enter the video URL">
+</div>
 
-    // プレイヤーを作成する関数
-    function createPlayer(videoId) {
-      const container = document.getElementById('video-container');
-      const iframe = document.createElement('iframe');
-      iframe.setAttribute('width', '400');
-      iframe.setAttribute('height', '225');
-      iframe.setAttribute('src', `https://www.youtube.com/embed/${videoId}?autoplay=0`);
-      iframe.setAttribute('frameborder', '0');
-      iframe.setAttribute('allowfullscreen', 'true');
-      iframe.classList.add('video-player');
-      container.appendChild(iframe);
-    }
+<div class="form-container">
+  <label for="video-url-3">YouTube Video URL 3</label>
+  <input type="url" id="video-url-3" placeholder="Enter the video URL">
+</div>
 
-    // 入力フォームのURLを基に動画を追加する関数
-    function addVideo(videoNumber) {
-      const url = document.getElementById(`video-url-${videoNumber}`).value;
-      const videoId = extractVideoId(url);
+<div class="form-container">
+  <label for="video-url-4">YouTube Video URL 4</label>
+  <input type="url" id="video-url-4" placeholder="Enter the video URL">
+</div>
 
-      if (videoId) {
-        createPlayer(videoId);
-      } else {
-        alert("無効なURLです。");
+<button onclick="syncVideos()">Sync Videos</button>
+
+<!-- Embed iframe for first video -->
+<div id="player"></div>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+
+<script>
+  var player; // Global player variable for YouTube iframe
+  var videoIds = []; // Store video IDs
+
+  const apiKey = 'AIzaSyBfrwUzoX8NJVN6AotMJggJh5cJLCqjmAc'; // Replace with your API key
+
+  // Create iframe players when API is ready
+  function onYouTubeIframeAPIReady() {
+    // Create the first video player
+    player = new YT.Player('player', {
+      height: '360',
+      width: '640',
+      videoId: videoIds[0], // First video ID
+      events: {
+        'onStateChange': onPlayerStateChange
       }
+    });
+  }
+
+  // When player state changes (e.g., playing, paused)
+  function onPlayerStateChange(event) {
+    if (event.data == YT.PlayerState.PLAYING) {
+      var currentTime = player.getCurrentTime();
+      syncOtherPlayers(currentTime); // Sync other videos based on this time
     }
-  </script>
+  }
+
+  // Sync other players' current time
+  function syncOtherPlayers(currentTime) {
+    var iframeElements = document.querySelectorAll('iframe');
+    iframeElements.forEach(function(iframe) {
+      iframe.contentWindow.postMessage(
+        JSON.stringify({ event: 'command', func: 'seekTo', args: [currentTime, true] }),
+        '*'
+      );
+    });
+  }
+
+  // Sync videos when user inputs URLs
+  function syncVideos() {
+    var url1 = document.getElementById('video-url-1').value;
+    var url2 = document.getElementById('video-url-2').value;
+    var url3 = document.getElementById('video-url-3').value;
+    var url4 = document.getElementById('video-url-4').value;
+
+    // Extract video ID from URLs and add them to the videoIds array
+    videoIds = [
+      extractVideoId(url1),
+      extractVideoId(url2),
+      extractVideoId(url3),
+      extractVideoId(url4)
+    ];
+
+    // Load the first video based on the user's input
+    player.loadVideoById(videoIds[0]);
+
+    // Create iframe players for the other videos
+    createIframePlayer('player2', videoIds[1]);
+    createIframePlayer('player3', videoIds[2]);
+    createIframePlayer('player4', videoIds[3]);
+  }
+
+  // Extract video ID from YouTube URL
+  function extractVideoId(url) {
+    var videoIdMatch = url.match(/(?:https?:\/\/(?:www\.)?youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|(?:.*[?&]v=))([\w-]{11}))/);
+    return videoIdMatch ? videoIdMatch[1] : '';
+  }
+
+  // Create an iframe player for a video
+  function createIframePlayer(id, videoId) {
+    var playerDiv = document.createElement('div');
+    playerDiv.id = id;
+    document.body.appendChild(playerDiv);
+
+    new YT.Player(id, {
+      height: '360',
+      width: '640',
+      videoId: videoId,
+      events: {
+        'onStateChange': onPlayerStateChange
+      }
+    });
+  }
+
+  // Get the video start time using YouTube Data API
+  function getVideoStartTime(videoId) {
+    var url = `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=snippet&key=${apiKey}`;
+
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        if (data.items && data.items.length > 0) {
+          const publishedAt = data.items[0].snippet.publishedAt;
+          console.log('Video start time:', publishedAt); // You can use this as the start time
+        }
+      })
+      .catch(error => console.error('Error fetching video data:', error));
+  }
+
+</script>
+
 </body>
 </html>
