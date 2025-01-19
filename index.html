@@ -3,176 +3,133 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube Multi-Player Sync</title>
+  <title>YouTube Multi-Player with Sync</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
       background-color: #f9f9f9;
     }
-    #video-container {
+    .video-container {
       display: flex;
-      justify-content: space-between;
+      justify-content: space-around;
+      margin-top: 20px;
     }
-    .video-frame {
-      width: 48%;
-      height: 300px;
+    iframe {
+      width: 320px;
+      height: 180px;
     }
     #syncButton {
-      margin-top: 10px;
-      padding: 10px;
-      background-color: #4CAF50;
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #007BFF;
       color: white;
       border: none;
       cursor: pointer;
-      font-size: 16px;
     }
     #syncButton:hover {
-      background-color: #45a049;
-    }
-    #url-container {
-      margin-bottom: 20px;
-    }
-    #url-container input {
-      width: 45%;
-      padding: 10px;
-      margin-right: 10px;
+      background-color: #0056b3;
     }
   </style>
 </head>
 <body>
-
   <h1>YouTube Multi-Player Sync</h1>
 
-  <!-- URL input form -->
-  <div id="url-container">
-    <input type="text" id="videoUrl1" placeholder="YouTube URL 1">
-    <input type="text" id="videoUrl2" placeholder="YouTube URL 2">
-    <input type="text" id="videoUrl3" placeholder="YouTube URL 3">
-    <input type="text" id="videoUrl4" placeholder="YouTube URL 4">
-    <button id="loadButton">Load Videos</button>
+  <div>
+    <label for="video1-url">YouTube URL 1:</label>
+    <input type="text" id="video1-url" placeholder="Enter first YouTube URL" />
+  </div>
+  <div>
+    <label for="video2-url">YouTube URL 2:</label>
+    <input type="text" id="video2-url" placeholder="Enter second YouTube URL" />
+  </div>
+  <div>
+    <label for="video3-url">YouTube URL 3:</label>
+    <input type="text" id="video3-url" placeholder="Enter third YouTube URL" />
+  </div>
+  <div>
+    <label for="video4-url">YouTube URL 4:</label>
+    <input type="text" id="video4-url" placeholder="Enter fourth YouTube URL" />
   </div>
 
-  <div id="video-container">
-    <div>
-      <h2>Video 1</h2>
-      <iframe id="video1" class="video-frame" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-    </div>
-    <div>
-      <h2>Video 2</h2>
-      <iframe id="video2" class="video-frame" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-    </div>
-    <div>
-      <h2>Video 3</h2>
-      <iframe id="video3" class="video-frame" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-    </div>
-    <div>
-      <h2>Video 4</h2>
-      <iframe id="video4" class="video-frame" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-    </div>
+  <div class="video-container">
+    <iframe id="video1" src="" frameborder="0"></iframe>
+    <iframe id="video2" src="" frameborder="0"></iframe>
+    <iframe id="video3" src="" frameborder="0"></iframe>
+    <iframe id="video4" src="" frameborder="0"></iframe>
   </div>
 
-  <button id="syncButton">Sync Videos</button>
+  <button id="syncButton" onclick="syncVideos()">Sync Videos</button>
 
   <script>
-    let player1, player2, player3, player4;
-    let videoStartTime1;
-    let videoUrls = [];
+    const apiKey = 'AIzaSyBfrwUzoX8NJVN6AotMJggJh5cJLCqjmAc';  // Your API key here
 
-    // YouTube API Key (You should replace this with your actual API key)
-    const apiKey = 'AIzaSyBfrwUzoX8NJVN6AotMJggJh5cJLCqjmAc';
+    let video1StartTime = 0;
+    let video1Duration = 0;
+    let video1Player;
 
-    // Fetch the video publish time for Video 1 using YouTube Data API
-    async function fetchVideoStartTime(videoId) {
-      const apiUrl = `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${apiKey}&part=snippet`;
-      try {
-        const response = await fetch(apiUrl);
-        const data = await response.json();
-        if (data.items && data.items.length > 0) {
-          const publishTime = data.items[0].snippet.publishedAt;
-          videoStartTime1 = new Date(publishTime).getTime() / 1000; // Convert to Unix timestamp
-          console.log("Video 1 Start Time (Unix timestamp):", videoStartTime1);
-        }
-      } catch (error) {
-        console.error('Error fetching video start time:', error);
-      }
-    }
-
-    // API ready callback
-    function onYouTubeIframeAPIReady() {
-      player1 = new YT.Player('video1', {
-        events: {
-          'onStateChange': onPlayerStateChange
-        }
-      });
-      player2 = new YT.Player('video2', {
-        events: {
-          'onStateChange': onPlayerStateChange
-        }
-      });
-      player3 = new YT.Player('video3', {
-        events: {
-          'onStateChange': onPlayerStateChange
-        }
-      });
-      player4 = new YT.Player('video4', {
-        events: {
-          'onStateChange': onPlayerStateChange
-        }
-      });
-    }
-
-    // State change handler
-    function onPlayerStateChange(event) {
-      if (event.data == YT.PlayerState.PLAYING) {
-        synchronizeVideos();
-      }
-    }
-
-    // Sync all videos based on Video 1's current time
-    function synchronizeVideos() {
-      let currentTime1 = player1.getCurrentTime(); // Get the current time of Video 1
-      let currentTime1Adjusted = currentTime1 + (videoStartTime1 - Math.floor(Date.now() / 1000));
-
-      player2.seekTo(currentTime1Adjusted, true);
-      player3.seekTo(currentTime1Adjusted, true);
-      player4.seekTo(currentTime1Adjusted, true);
-    }
-
-    // Load videos when user inputs URLs
-    document.getElementById('loadButton').addEventListener('click', function() {
-      videoUrls[0] = document.getElementById('videoUrl1').value;
-      videoUrls[1] = document.getElementById('videoUrl2').value;
-      videoUrls[2] = document.getElementById('videoUrl3').value;
-      videoUrls[3] = document.getElementById('videoUrl4').value;
-
-      // Extract video IDs from URLs
-      let videoIds = videoUrls.map(url => {
-        const videoIdMatch = url.match(/(?:youtu.be\/|youtube.com\/(?:v|e(?:mbed)?)\/)([^"&?\/\s]{11})/);
-        return videoIdMatch ? videoIdMatch[1] : null;
-      });
-
-      if (videoIds[0]) {
-        fetchVideoStartTime(videoIds[0]);
-      }
-
-      // Update iframe sources with YouTube video URLs
-      document.getElementById('video1').src = `https://www.youtube.com/embed/${videoIds[0]}?enablejsapi=1`;
-      document.getElementById('video2').src = `https://www.youtube.com/embed/${videoIds[1]}?enablejsapi=1`;
-      document.getElementById('video3').src = `https://www.youtube.com/embed/${videoIds[2]}?enablejsapi=1`;
-      document.getElementById('video4').src = `https://www.youtube.com/embed/${videoIds[3]}?enablejsapi=1`;
-
-      // Load YouTube Iframe API
-      let script = document.createElement('script');
-      script.src = "https://www.youtube.com/iframe_api";
+    // Load the YouTube API
+    function loadYouTubeAPI() {
+      const script = document.createElement('script');
+      script.src = 'https://www.youtube.com/iframe_api';
       document.body.appendChild(script);
-    });
+    }
 
-    // Sync button functionality
-    document.getElementById('syncButton').addEventListener('click', function() {
-      synchronizeVideos();
-    });
+    function onYouTubeIframeAPIReady() {
+      video1Player = new YT.Player('video1', {
+        events: {
+          'onStateChange': onPlayerStateChange
+        }
+      });
+    }
+
+    function onPlayerStateChange(event) {
+      if (event.data === YT.PlayerState.PLAYING) {
+        video1StartTime = video1Player.getCurrentTime();
+        video1Duration = video1Player.getDuration();
+      }
+    }
+
+    function syncVideos() {
+      const videoUrls = [
+        document.getElementById('video1-url').value,
+        document.getElementById('video2-url').value,
+        document.getElementById('video3-url').value,
+        document.getElementById('video4-url').value
+      ];
+
+      if (videoUrls[0]) {
+        // Set the video 1 to its correct timestamp
+        loadVideo(1, videoUrls[0], video1StartTime);
+      }
+
+      if (videoUrls[1]) {
+        loadVideo(2, videoUrls[1], video1StartTime);
+      }
+
+      if (videoUrls[2]) {
+        loadVideo(3, videoUrls[2], video1StartTime);
+      }
+
+      if (videoUrls[3]) {
+        loadVideo(4, videoUrls[3], video1StartTime);
+      }
+    }
+
+    function loadVideo(videoNumber, videoUrl, startTime) {
+      const videoId = extractVideoId(videoUrl);
+      const iframe = document.getElementById(`video${videoNumber}`);
+
+      iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&start=${startTime}`;
+    }
+
+    function extractVideoId(url) {
+      const videoIdMatch = url.match(/(?:https?:\/\/(?:www\.)?youtube\.com\/(?:[^\/\n]+\/\S+\/|\S+\/)?(?:v|e(?:mbed)?)\/|\S*\/)([a-zA-Z0-9_-]{11})/);
+      return videoIdMatch ? videoIdMatch[1] : null;
+    }
+
+    // Trigger YouTube API loading
+    loadYouTubeAPI();
   </script>
-
 </body>
 </html>
