@@ -103,12 +103,18 @@
 
       // Set the video ids and start players
       for (let i = 0; i < 4; i++) {
-        const videoId = urls[i].split('v=')[1].split('&')[0];
+        const videoId = getYouTubeVideoId(urls[i]);
         players[i].loadVideoById(videoId, 0, "large");
       }
 
       // Enable syncing
       isSyncing = true;
+    }
+
+    // Get the YouTube video ID from the URL
+    function getYouTubeVideoId(url) {
+      const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/\S+\/|\S+\/|\S+|\S+\/v\/|\S+\/e\/|\S+\/(?:v|e)\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+      return match ? match[1] : null;
     }
 
     // Sync the players based on the player that triggered the sync
