@@ -8,16 +8,55 @@
         body {
             font-family: Arial, sans-serif;
             text-align: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
         }
+
+        h1 {
+            margin: 20px 0;
+        }
+
+        form {
+            margin: 20px auto;
+            max-width: 600px;
+            padding: 10px;
+        }
+
+        form div {
+            margin-bottom: 10px;
+        }
+
         .player-container {
-            display: flex;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); /* 横2列 */
+            gap: 10px; /* 隙間 */
             justify-content: center;
-            gap: 10px;
+            padding: 10px;
         }
+
         .player-container iframe {
-            width: 300px;
-            height: 200px;
+            width: 100%; /* レスポンシブ対応 */
+            max-width: 400px; /* 最大幅 */
+            aspect-ratio: 16 / 9; /* アスペクト比を維持 */
+        }
+
+        input[type="text"] {
+            width: calc(100% - 20px);
+            padding: 5px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
