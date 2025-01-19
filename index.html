@@ -30,27 +30,45 @@
     #syncButton:hover {
       background-color: #45a049;
     }
+    #url-container {
+      margin-bottom: 20px;
+    }
+    #url-container input {
+      width: 45%;
+      padding: 10px;
+      margin-right: 10px;
+    }
   </style>
 </head>
 <body>
 
   <h1>YouTube Multi-Player Sync</h1>
+
+  <!-- URL input form -->
+  <div id="url-container">
+    <input type="text" id="videoUrl1" placeholder="YouTube URL 1">
+    <input type="text" id="videoUrl2" placeholder="YouTube URL 2">
+    <input type="text" id="videoUrl3" placeholder="YouTube URL 3">
+    <input type="text" id="videoUrl4" placeholder="YouTube URL 4">
+    <button id="loadButton">Load Videos</button>
+  </div>
+
   <div id="video-container">
     <div>
       <h2>Video 1</h2>
-      <iframe id="video1" class="video-frame" src="https://www.youtube.com/embed/VIDEO_ID_1?enablejsapi=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+      <iframe id="video1" class="video-frame" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
     </div>
     <div>
       <h2>Video 2</h2>
-      <iframe id="video2" class="video-frame" src="https://www.youtube.com/embed/VIDEO_ID_2?enablejsapi=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+      <iframe id="video2" class="video-frame" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
     </div>
     <div>
       <h2>Video 3</h2>
-      <iframe id="video3" class="video-frame" src="https://www.youtube.com/embed/VIDEO_ID_3?enablejsapi=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+      <iframe id="video3" class="video-frame" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
     </div>
     <div>
       <h2>Video 4</h2>
-      <iframe id="video4" class="video-frame" src="https://www.youtube.com/embed/VIDEO_ID_4?enablejsapi=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+      <iframe id="video4" class="video-frame" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
     </div>
   </div>
 
@@ -59,6 +77,7 @@
   <script>
     let player1, player2, player3, player4;
     let videoStartTime1;
+    let videoUrls = [];
 
     // YouTube API Key (You should replace this with your actual API key)
     const apiKey = 'AIzaSyBfrwUzoX8NJVN6AotMJggJh5cJLCqjmAc';
@@ -101,9 +120,6 @@
           'onStateChange': onPlayerStateChange
         }
       });
-
-      // Fetch the start time for Video 1 once the API is ready
-      fetchVideoStartTime('VIDEO_ID_1');  // Replace with actual Video 1 ID
     }
 
     // State change handler
@@ -123,15 +139,39 @@
       player4.seekTo(currentTime1Adjusted, true);
     }
 
+    // Load videos when user inputs URLs
+    document.getElementById('loadButton').addEventListener('click', function() {
+      videoUrls[0] = document.getElementById('videoUrl1').value;
+      videoUrls[1] = document.getElementById('videoUrl2').value;
+      videoUrls[2] = document.getElementById('videoUrl3').value;
+      videoUrls[3] = document.getElementById('videoUrl4').value;
+
+      // Extract video IDs from URLs
+      let videoIds = videoUrls.map(url => {
+        const videoIdMatch = url.match(/(?:youtu.be\/|youtube.com\/(?:v|e(?:mbed)?)\/)([^"&?\/\s]{11})/);
+        return videoIdMatch ? videoIdMatch[1] : null;
+      });
+
+      if (videoIds[0]) {
+        fetchVideoStartTime(videoIds[0]);
+      }
+
+      // Update iframe sources with YouTube video URLs
+      document.getElementById('video1').src = `https://www.youtube.com/embed/${videoIds[0]}?enablejsapi=1`;
+      document.getElementById('video2').src = `https://www.youtube.com/embed/${videoIds[1]}?enablejsapi=1`;
+      document.getElementById('video3').src = `https://www.youtube.com/embed/${videoIds[2]}?enablejsapi=1`;
+      document.getElementById('video4').src = `https://www.youtube.com/embed/${videoIds[3]}?enablejsapi=1`;
+
+      // Load YouTube Iframe API
+      let script = document.createElement('script');
+      script.src = "https://www.youtube.com/iframe_api";
+      document.body.appendChild(script);
+    });
+
     // Sync button functionality
     document.getElementById('syncButton').addEventListener('click', function() {
       synchronizeVideos();
     });
-
-    // Load YouTube Iframe API
-    let script = document.createElement('script');
-    script.src = "https://www.youtube.com/iframe_api";
-    document.body.appendChild(script);
   </script>
 
 </body>
