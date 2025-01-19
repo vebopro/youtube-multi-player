@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+ï»¿<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube“®‰æ‚ğ•¡”•\¦</title>
+  <title>YouTubeå‹•ç”»ã‚’è¤‡æ•°è¡¨ç¤º</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -36,36 +36,36 @@
   </style>
 </head>
 <body>
-  <h1>YouTube“®‰æ‚ğ•¡”•\¦</h1>
+  <h1>YouTubeå‹•ç”»ã‚’è¤‡æ•°è¡¨ç¤º</h1>
 
   <div class="form-container">
-    <input type="text" id="video-url-1" placeholder="YouTube“®‰æURL 1">
-    <button onclick="addVideo(1)">“®‰æ1‚ğ’Ç‰Á</button>
+    <input type="text" id="video-url-1" placeholder="YouTubeå‹•ç”»URL 1">
+    <button onclick="addVideo(1)">å‹•ç”»1ã‚’è¿½åŠ </button>
   </div>
   <div class="form-container">
-    <input type="text" id="video-url-2" placeholder="YouTube“®‰æURL 2">
-    <button onclick="addVideo(2)">“®‰æ2‚ğ’Ç‰Á</button>
+    <input type="text" id="video-url-2" placeholder="YouTubeå‹•ç”»URL 2">
+    <button onclick="addVideo(2)">å‹•ç”»2ã‚’è¿½åŠ </button>
   </div>
   <div class="form-container">
-    <input type="text" id="video-url-3" placeholder="YouTube“®‰æURL 3">
-    <button onclick="addVideo(3)">“®‰æ3‚ğ’Ç‰Á</button>
+    <input type="text" id="video-url-3" placeholder="YouTubeå‹•ç”»URL 3">
+    <button onclick="addVideo(3)">å‹•ç”»3ã‚’è¿½åŠ </button>
   </div>
   <div class="form-container">
-    <input type="text" id="video-url-4" placeholder="YouTube“®‰æURL 4">
-    <button onclick="addVideo(4)">“®‰æ4‚ğ’Ç‰Á</button>
+    <input type="text" id="video-url-4" placeholder="YouTubeå‹•ç”»URL 4">
+    <button onclick="addVideo(4)">å‹•ç”»4ã‚’è¿½åŠ </button>
   </div>
 
   <div id="video-container"></div>
 
   <script>
-    // YouTube‚Ì“®‰æID‚ğæ“¾‚·‚éŠÖ”
+    // YouTubeã®å‹•ç”»IDã‚’å–å¾—ã™ã‚‹é–¢æ•°
     function extractVideoId(url) {
       const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
       const match = url.match(regex);
       return match ? match[1] : null;
     }
 
-    // ƒvƒŒƒCƒ„[‚ğì¬‚·‚éŠÖ”
+    // ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã‚’ä½œæˆã™ã‚‹é–¢æ•°
     function createPlayer(videoId) {
       const container = document.getElementById('video-container');
       const iframe = document.createElement('iframe');
@@ -78,7 +78,7 @@
       container.appendChild(iframe);
     }
 
-    // “ü—ÍƒtƒH[ƒ€‚ÌURL‚ğŠî‚É“®‰æ‚ğ’Ç‰Á‚·‚éŠÖ”
+    // å…¥åŠ›ãƒ•ã‚©ãƒ¼ãƒ ã®URLã‚’åŸºã«å‹•ç”»ã‚’è¿½åŠ ã™ã‚‹é–¢æ•°
     function addVideo(videoNumber) {
       const url = document.getElementById(`video-url-${videoNumber}`).value;
       const videoId = extractVideoId(url);
@@ -86,7 +86,7 @@
       if (videoId) {
         createPlayer(videoId);
       } else {
-        alert("–³Œø‚ÈURL‚Å‚·B");
+        alert("ç„¡åŠ¹ãªURLã§ã™ã€‚");
       }
     }
   </script>
