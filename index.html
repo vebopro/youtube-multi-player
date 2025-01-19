@@ -54,6 +54,7 @@
     let players = [];  // プレイヤーを保存する配列
     let videoStartTimes = {}; // 各動画の配信開始時刻（JST）
     let videoData = []; // 動画の情報を保持する配列
+    let baseStartTime = null; // 基準となる最初の動画の開始時刻
 
     // 動画IDを抽出する関数
     function extractVideoId(url) {
@@ -70,7 +71,7 @@
     }
 
     // YouTubeプレイヤーを作成する関数
-    function createPlayer(videoId, startTime) {
+    function createPlayer(videoId) {
       const container = document.getElementById('video-container');
       const iframe = document.createElement('iframe');
       iframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1`;
@@ -83,8 +84,15 @@
         events: {
           onReady: function (event) {
             players.push(event.target);
-            videoStartTimes[videoId] = startTime;
-            videoData.push({ videoId, startTime });
+            if (baseStartTime === null) {
+              // 最初に読み込んだ動画の配信開始時刻を基準にする
+              baseStartTime = getCurrentJST();
+            } else {
+              // 2番目以降の動画は、最初の動画の時間に基づいて同期
+              const timeDifference = (getCurrentJST() - baseStartTime) / 1000;
+              event.target.seekTo(timeDifference, true);
+            }
+            videoData.push({ videoId, startTime: baseStartTime });
           },
           onStateChange: function(event) {
             if (event.data === YT.PlayerState.PLAYING) {
@@ -99,9 +107,7 @@
     function syncAllPlayers() {
       const currentJST = getCurrentJST();
       players.forEach(player => {
-        const videoId = player.getVideoData().video_id;
-        const startTime = videoStartTimes[videoId];
-        const timeDifference = (currentJST - startTime) / 1000; // ミリ秒を秒に変換
+        const timeDifference = (currentJST - baseStartTime) / 1000; // ミリ秒を秒に変換
         player.seekTo(timeDifference, true); // 再生位置を設定
       });
     }
@@ -142,13 +148,10 @@
     function addVideo() {
       const url = prompt("YouTubeのURLを入力してください");
       const videoId = extractVideoId(url);
-      const startTimeStr = prompt("配信開始時刻（YYYY-MM-DD HH:MM:SS）を入力してください（JST）");
-      const startTime = new Date(startTimeStr).getTime(); // JSTでの配信開始時刻（ミリ秒）
-
-      if (videoId && startTime) {
-        createPlayer(videoId, startTime);
+      if (videoId) {
+        createPlayer(videoId);
       } else {
-        alert("無効なURLまたは配信開始時刻です。");
+        alert("無効なURLです。");
       }
     }
 
@@ -157,8 +160,7 @@
       const urlParams = new URLSearchParams(window.location.search);
       urlParams.forEach((value, key) => {
         const videoId = key;
-        const startTime = new Date(value).getTime(); // JSTでの配信開始時刻（ミリ秒）
-        createPlayer(videoId, startTime);
+        createPlayer(videoId);
       });
     }
 
