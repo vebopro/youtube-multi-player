@@ -3,181 +3,92 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTubeアーカイブ同期再生ツール</title>
+  <title>YouTube動画を複数表示</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
       background-color: #f9f9f9;
     }
-    header {
-      text-align: center;
+    .form-container {
       margin-bottom: 20px;
     }
-    #video-container {
-      display: grid;
-      gap: 10px;
-      margin-top: 20px;
-      grid-template-columns: repeat(2, 1fr);
-    }
-    .video-player {
-      width: 100%;
-      height: 200px;
-      border: none;
+    input[type="text"] {
+      padding: 10px;
+      font-size: 14px;
+      margin-right: 10px;
+      width: 300px;
     }
     button {
-      margin: 10px;
-      padding: 10px 20px;
+      padding: 10px 15px;
+      font-size: 14px;
       cursor: pointer;
+    }
+    #video-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .video-player {
+      width: 48%;
+      height: 250px;
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>YouTubeアーカイブ同期再生ツール</h1>
-    <p>複数のYouTubeアーカイブを同期して再生できます。</p>
-    <p>このツールを使用して、他者と動画を同期再生できます。</p>
-  </header>
+  <h1>YouTube動画を複数表示</h1>
 
-  <div>
-    <button id="sync-time">同期開始</button>
-    <button id="play-all">再生</button>
-    <button id="pause-all">一時停止</button>
-    <button id="generate-url">同期URLを生成</button>
+  <div class="form-container">
+    <input type="text" id="video-url-1" placeholder="YouTube動画URL 1">
+    <button onclick="addVideo(1)">動画1を追加</button>
+  </div>
+  <div class="form-container">
+    <input type="text" id="video-url-2" placeholder="YouTube動画URL 2">
+    <button onclick="addVideo(2)">動画2を追加</button>
+  </div>
+  <div class="form-container">
+    <input type="text" id="video-url-3" placeholder="YouTube動画URL 3">
+    <button onclick="addVideo(3)">動画3を追加</button>
+  </div>
+  <div class="form-container">
+    <input type="text" id="video-url-4" placeholder="YouTube動画URL 4">
+    <button onclick="addVideo(4)">動画4を追加</button>
   </div>
 
-  <div id="video-container">
-    <!-- 動的にプレイヤーが追加される -->
-  </div>
+  <div id="video-container"></div>
 
   <script>
-    let players = [];  // プレイヤーを保存する配列
-    let videoStartTimes = {}; // 各動画の配信開始時刻（JST）
-    let videoData = []; // 動画の情報を保持する配列
-    let baseStartTime = null; // 基準となる最初の動画の開始時刻
-
-    // 動画IDを抽出する関数
+    // YouTubeの動画IDを取得する関数
     function extractVideoId(url) {
-      const match = url.match(/(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([^&]+)/);
+      const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+      const match = url.match(regex);
       return match ? match[1] : null;
     }
 
-    // 現在の日本標準時（JST）を取得する関数
-    function getCurrentJST() {
-      const now = new Date();
-      const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-      const jst = new Date(utc + 9 * 60 * 60 * 1000); // JSTはUTC+9時間
-      return jst;
-    }
-
-    // YouTubeプレイヤーを作成する関数
+    // プレイヤーを作成する関数
     function createPlayer(videoId) {
       const container = document.getElementById('video-container');
       const iframe = document.createElement('iframe');
-      iframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1`;
-      iframe.allow = "autoplay; encrypted-media";
-      iframe.className = "video-player";
+      iframe.setAttribute('width', '400');
+      iframe.setAttribute('height', '225');
+      iframe.setAttribute('src', `https://www.youtube.com/embed/${videoId}?autoplay=0`);
+      iframe.setAttribute('frameborder', '0');
+      iframe.setAttribute('allowfullscreen', 'true');
+      iframe.classList.add('video-player');
       container.appendChild(iframe);
-
-      // プレイヤーを配列に追加
-      const player = new YT.Player(iframe, {
-        events: {
-          onReady: function (event) {
-            players.push(event.target);
-            if (baseStartTime === null) {
-              // 最初に読み込んだ動画の配信開始時刻を基準にする
-              baseStartTime = getCurrentJST();
-            } else {
-              // 2番目以降の動画は、最初の動画の時間に基づいて同期
-              const timeDifference = (getCurrentJST() - baseStartTime) / 1000;
-              event.target.seekTo(timeDifference, true);
-            }
-            videoData.push({ videoId, startTime: baseStartTime });
-          },
-          onStateChange: function(event) {
-            if (event.data === YT.PlayerState.PLAYING) {
-              syncAllPlayers();
-            }
-          }
-        }
-      });
     }
 
-    // プレイヤーの再生位置をJST基準で同期する関数
-    function syncAllPlayers() {
-      const currentJST = getCurrentJST();
-      players.forEach(player => {
-        const timeDifference = (currentJST - baseStartTime) / 1000; // ミリ秒を秒に変換
-        player.seekTo(timeDifference, true); // 再生位置を設定
-      });
-    }
-
-    // 動画の再生・一時停止
-    function controlPlayers(action) {
-      players.forEach(player => {
-        if (action === 'play') {
-          player.playVideo();
-        } else if (action === 'pause') {
-          player.pauseVideo();
-        }
-      });
-    }
-
-    // 同期ボタン
-    document.getElementById('sync-time').addEventListener('click', () => {
-      syncAllPlayers();
-    });
-
-    // 再生ボタン
-    document.getElementById('play-all').addEventListener('click', () => controlPlayers('play'));
-
-    // 一時停止ボタン
-    document.getElementById('pause-all').addEventListener('click', () => controlPlayers('pause'));
-
-    // URL生成ボタン
-    document.getElementById('generate-url').addEventListener('click', () => {
-      const urlParams = videoData.map(video => {
-        return `${video.videoId}=${encodeURIComponent(new Date(video.startTime).toISOString())}`;
-      }).join('&');
-
-      const shareUrl = `${window.location.href}?${urlParams}`;
-      prompt("このURLを共有できます:", shareUrl);
-    });
-
-    // 動画追加
-    function addVideo() {
-      const url = prompt("YouTubeのURLを入力してください");
+    // 入力フォームのURLを基に動画を追加する関数
+    function addVideo(videoNumber) {
+      const url = document.getElementById(`video-url-${videoNumber}`).value;
       const videoId = extractVideoId(url);
+
       if (videoId) {
         createPlayer(videoId);
       } else {
         alert("無効なURLです。");
       }
     }
-
-    // ページ読み込み時にURLパラメータを解析して動画を追加
-    function loadFromURL() {
-      const urlParams = new URLSearchParams(window.location.search);
-      urlParams.forEach((value, key) => {
-        const videoId = key;
-        createPlayer(videoId);
-      });
-    }
-
-    // ページ読み込み時にデモ用動画を2つ追加
-    addVideo();  // 1番目の動画
-    addVideo();  // 2番目の動画
-
-    // URLパラメータに基づいて動画を読み込む
-    loadFromURL();
-
-    // YouTube APIを準備する
-    function onYouTubeIframeAPIReady() {
-      // プレイヤーの準備が整ったら何かを実行する場合はこちらに追加
-    }
   </script>
-
-  <!-- YouTube APIを読み込む -->
-  <script src="https://www.youtube.com/iframe_api"></script>
 </body>
 </html>
