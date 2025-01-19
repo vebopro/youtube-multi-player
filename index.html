@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Multi-Player</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        .player-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        .player-container iframe {
+            width: 300px;
+            height: 200px;
+        }
+    </style>
+</head>
+<body>
+    <h1>YouTube Multi-Player</h1>
+    <form id="url-form">
+        <div>
+            <label>Video 1: <input type="text" id="video-url-1" placeholder="Enter YouTube URL" required></label>
+        </div>
+        <div>
+            <label>Video 2: <input type="text" id="video-url-2" placeholder="Enter YouTube URL"></label>
+        </div>
+        <div>
+            <label>Video 3: <input type="text" id="video-url-3" placeholder="Enter YouTube URL"></label>
+        </div>
+        <div>
+            <label>Video 4: <input type="text" id="video-url-4" placeholder="Enter YouTube URL"></label>
+        </div>
+        <button type="submit">Load Videos</button>
+    </form>
+    <div class="player-container" id="player-container"></div>
+
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="script.js"></script>
+</body>
+</html>
